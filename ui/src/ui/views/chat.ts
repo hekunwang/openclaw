@@ -5,6 +5,11 @@ import { repeat } from "lit/directives/repeat.js";
 import { t } from "../../i18n/index.ts";
 import type { CompactionStatus, FallbackStatus } from "../app-tool-stream.ts";
 import {
+  getVisibleChatTurnTiming,
+  summarizeChatTurnTiming,
+  type ChatTurnTiming,
+} from "../chat-turn-timing.ts";
+import {
   getChatAttachmentPreviewUrl,
   registerChatAttachmentPayload,
   releaseChatAttachmentPayload,
@@ -70,6 +75,8 @@ export type ChatProps = {
   streamSegments: Array<{ text: string; ts: number }>;
   stream: string | null;
   streamStartedAt: number | null;
+  chatTurnTimingCurrent?: ChatTurnTiming | null;
+  chatTurnTimingLast?: ChatTurnTiming | null;
   assistantAvatarUrl?: string | null;
   draft: string;
   queue: ChatQueueItem[];
@@ -159,6 +166,34 @@ function getPinnedMessages(sessionKey: string): PinnedMessages {
     sessionKey,
     () => new PinnedMessages(sessionKey),
   );
+}
+
+function renderChatTurnTimingStrip(props: ChatProps) {
+  const timing = getVisibleChatTurnTiming(
+    props.chatTurnTimingCurrent,
+    props.chatTurnTimingLast,
+    props.sessionKey,
+  );
+  if (!timing) {
+    return nothing;
+  }
+  const summary = summarizeChatTurnTiming(timing);
+  if (summary.length === 0) {
+    return nothing;
+  }
+  return html`
+    <div class="chat-turn-timing" role="status" aria-live="polite">
+      <span class="chat-turn-timing__label">Turn timing</span>
+      ${summary.map(
+        (item) => html`
+          <span class="chat-turn-timing__item">
+            <span class="chat-turn-timing__item-label">${item.label}</span>
+            <span class="chat-turn-timing__item-value">${item.value}</span>
+          </span>
+        `,
+      )}
+    </div>
+  `;
 }
 
 function getDeletedMessages(sessionKey: string): DeletedMessages {
@@ -1336,7 +1371,7 @@ export function renderChat(props: ChatProps) {
         onQueueRemove: props.onQueueRemove,
       })}
       ${renderSideResult(props.sideResult, props.onDismissSideResult)}
-      ${renderFallbackIndicator(props.fallbackStatus)}
+      ${renderChatTurnTimingStrip(props)} ${renderFallbackIndicator(props.fallbackStatus)}
       ${renderCompactionIndicator(props.compactionStatus)}
       ${renderContextNotice(activeSession, props.sessions?.defaults?.contextTokens ?? null, {
         compactBusy,

@@ -556,6 +556,18 @@ export function renderSidebarPinnedChats(state: AppViewState) {
           <button
             class="sidebar-pinned-chats__action"
             type="button"
+            title="New parallel session"
+            aria-label="New parallel session"
+            ?disabled=${!canCreateParallelSession}
+            @click=${() => {
+              void createBlankPinnedParallelSession(state);
+            }}
+          >
+            <span class="sidebar-pinned-chats__action-text">New</span>
+          </button>
+          <button
+            class="sidebar-pinned-chats__action"
+            type="button"
             title="Add pinned slot"
             aria-label="Add pinned slot"
             ?disabled=${!canAddSlot}
@@ -634,7 +646,7 @@ export function renderSidebarPinnedChats(state: AppViewState) {
                         }}
                       />
                       <span
-                        class="sidebar-pinned-chats__status ${resolvePinnedChatStatusTone(
+                        class="sidebar-pinned-chats__status sidebar-pinned-chats__status--compact ${resolvePinnedChatStatusTone(
                           entry.status,
                         )}"
                         title=${resolvePinnedChatStatusLabel(entry.status)}
@@ -674,6 +686,13 @@ export function renderSidebarPinnedChats(state: AppViewState) {
                         <span class="nav-item__icon" aria-hidden="true"
                           >${icons.messageSquare}</span
                         >
+                        <span
+                          class="sidebar-pinned-chats__status sidebar-pinned-chats__status--inline ${resolvePinnedChatStatusTone(
+                            entry.status,
+                          )}"
+                          title=${resolvePinnedChatStatusLabel(entry.status)}
+                          aria-label=${resolvePinnedChatStatusLabel(entry.status)}
+                        ></span>
                         <span class="nav-item__text">${entry.label}</span>
                       </button>
                       <button
@@ -688,13 +707,6 @@ export function renderSidebarPinnedChats(state: AppViewState) {
                       >
                         ${icons.edit}
                       </button>
-                      <span
-                        class="sidebar-pinned-chats__status ${resolvePinnedChatStatusTone(
-                          entry.status,
-                        )}"
-                        title=${resolvePinnedChatStatusLabel(entry.status)}
-                        aria-label=${resolvePinnedChatStatusLabel(entry.status)}
-                      ></span>
                       <button
                         class="sidebar-pinned-chats__remove"
                         type="button"

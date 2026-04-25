@@ -66,6 +66,7 @@ import {
 } from "./app-tool-stream.ts";
 import type { AppViewState } from "./app-view-state.ts";
 import { normalizeAssistantIdentity } from "./assistant-identity.ts";
+import type { ChatTurnTiming } from "./chat-turn-timing.ts";
 import { exportChatMarkdown } from "./chat/export.ts";
 import {
   RealtimeTalkSession,
@@ -210,6 +211,8 @@ export class OpenClawApp extends LitElement {
   @state() chatStreamSegments: Array<{ text: string; ts: number }> = [];
   @state() chatStream: string | null = null;
   @state() chatStreamStartedAt: number | null = null;
+  @state() chatTurnTimingCurrent: ChatTurnTiming | null = null;
+  @state() chatTurnTimingLast: ChatTurnTiming | null = null;
   @state() chatRunId: string | null = null;
   @state() chatSideResult: ChatSideResult | null = null;
   @state() compactionStatus: CompactionStatus | null = null;

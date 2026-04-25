@@ -1,5 +1,13 @@
 import { resetToolStream } from "../app-tool-stream.ts";
 import {
+  beginChatTurnTiming,
+  clearChatTurnTimingCurrent,
+  markChatTurnAck,
+  markChatTurnFirstText,
+  markChatTurnTerminal,
+  type ChatTurnTiming,
+} from "../chat-turn-timing.ts";
+import {
   getChatAttachmentDataUrl,
   getChatAttachmentPreviewUrl,
 } from "../chat/attachment-payload-store.ts";
@@ -267,6 +275,8 @@ export type ChatState = {
   chatRunId: string | null;
   chatStream: string | null;
   chatStreamStartedAt: number | null;
+  chatTurnTimingCurrent?: ChatTurnTiming | null;
+  chatTurnTimingLast?: ChatTurnTiming | null;
   lastError: string | null;
   resetChatInputHistoryNavigation?: () => void;
 };
@@ -579,15 +589,18 @@ export async function sendChatMessage(
   state.chatSending = true;
   state.lastError = null;
   const runId = generateUUID();
+  beginChatTurnTiming(state, { runId, sessionKey: state.sessionKey, submittedAt: now });
   state.chatRunId = runId;
   state.chatStream = "";
   state.chatStreamStartedAt = now;
 
   try {
     await requestChatSend(state, { message: msg, attachments, runId });
+    markChatTurnAck(state, runId);
     return runId;
   } catch (err) {
     const error = formatConnectError(err);
+    clearChatTurnTimingCurrent(state, runId);
     state.chatRunId = null;
     state.chatStream = null;
     state.chatStreamStartedAt = null;
@@ -706,6 +719,9 @@ export function handleChatEvent(state: ChatState, payload?: ChatEventPayload) {
       !isSilentReplyStream(next) &&
       !isAssistantHeartbeatAckForDisplay(payload.message)
     ) {
+      if (payload.runId) {
+        markChatTurnFirstText(state, payload.runId);
+      }
       state.chatStream = next;
     }
   } else if (payload.state === "final") {
@@ -725,6 +741,9 @@ export function handleChatEvent(state: ChatState, payload?: ChatEventPayload) {
           timestamp: Date.now(),
         },
       ];
+    }
+    if (payload.runId) {
+      markChatTurnTerminal(state, payload.runId);
     }
     state.chatStream = null;
     state.chatRunId = null;
@@ -750,10 +769,16 @@ export function handleChatEvent(state: ChatState, payload?: ChatEventPayload) {
         ];
       }
     }
+    if (payload.runId) {
+      markChatTurnTerminal(state, payload.runId);
+    }
     state.chatStream = null;
     state.chatRunId = null;
     state.chatStreamStartedAt = null;
   } else if (payload.state === "error") {
+    if (payload.runId) {
+      markChatTurnTerminal(state, payload.runId);
+    }
     state.chatStream = null;
     state.chatRunId = null;
     state.chatStreamStartedAt = null;

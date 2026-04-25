@@ -895,9 +895,15 @@
 }
 
 .sidebar-pinned-chats__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px 28px;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  width: 100%;
+}
+
+.sidebar-pinned-chats__row--editing {
+  grid-template-columns: minmax(0, 1fr) 18px 28px 28px;
 }
 
 .sidebar-pinned-chats__row:not(.sidebar-pinned-chats__row--editing) {
@@ -905,8 +911,10 @@
 }
 
 .sidebar-pinned-chats__slot {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
+  width: auto;
+  max-width: 100%;
 }
 
 .sidebar-pinned-chats__slot:active {
@@ -914,6 +922,7 @@
 }
 
 .sidebar-pinned-chats__slot .nav-item__text {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -924,9 +933,9 @@
 }
 
 .sidebar-pinned-chats__remove {
-  width: 32px;
+  width: 28px;
   height: 32px;
-  flex-shrink: 0;
+  flex: 0 0 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -967,6 +976,19 @@
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+}
+
+.sidebar-pinned-chats__status--compact,
+.sidebar-pinned-chats__status--inline {
+  width: 18px;
+  height: 20px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.sidebar-pinned-chats__status--inline {
+  margin-left: -2px;
+  margin-right: -4px;
 }
 
 .sidebar-pinned-chats__status::before {
@@ -1034,7 +1056,7 @@
 }
 
 .sidebar-pinned-chats__rename-input {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   height: 40px;
   padding: 0 12px;

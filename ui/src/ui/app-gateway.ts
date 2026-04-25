@@ -20,6 +20,11 @@ import {
 } from "./app-settings.ts";
 import { handleAgentEvent, resetToolStream, type AgentEventPayload } from "./app-tool-stream.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
+import {
+  markChatTurnAgentStart,
+  markChatTurnStatusRunning,
+  type ChatTurnTiming,
+} from "./chat-turn-timing.ts";
 import { parseChatSideResult, type ChatSideResult } from "./chat/side-result.ts";
 import { formatConnectError } from "./connect-error.ts";
 import { recordControlUiRpcTiming } from "./control-ui-performance.ts";
@@ -104,6 +109,8 @@ type GatewayHost = {
   updateStatusBanner: { tone: "danger" | "warn" | "info"; text: string } | null;
   sessionKey: string;
   chatRunId: string | null;
+  chatTurnTimingCurrent?: ChatTurnTiming | null;
+  chatTurnTimingLast?: ChatTurnTiming | null;
   pendingAbort?: { runId?: string | null; sessionKey: string } | null;
   refreshSessionsAfterChat: Set<string>;
   execApprovalQueue: ExecApprovalRequest[];
@@ -855,6 +862,35 @@ function handleGatewayEventUnsafe(host: GatewayHost, evt: GatewayEventFrame) {
   }
 
   if (evt.event === "sessions.changed") {
+    const payload = evt.payload as
+      | {
+          sessionKey?: string;
+          runId?: string;
+          phase?: string;
+          status?: string;
+          session?: { status?: string | null } | null;
+        }
+      | undefined;
+    if (
+      payload?.phase === "start" &&
+      payload.sessionKey === host.sessionKey &&
+      typeof payload.runId === "string"
+    ) {
+      markChatTurnAgentStart(host, payload.runId);
+    }
+    const liveStatus =
+      typeof payload?.status === "string"
+        ? payload.status
+        : typeof payload?.session?.status === "string"
+          ? payload.session.status
+          : null;
+    if (
+      liveStatus === "running" &&
+      payload?.sessionKey === host.sessionKey &&
+      typeof payload.runId === "string"
+    ) {
+      markChatTurnStatusRunning(host, payload.runId);
+    }
     const result = applySessionsChangedEvent(host as unknown as SessionsState, evt.payload);
     if (result.applied || isChatTurnSessionChangedPayload(evt.payload)) {
       return;

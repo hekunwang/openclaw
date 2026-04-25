@@ -1,6 +1,7 @@
 import type { ChatAbortOptions, ChatSendOptions } from "./app-chat.ts";
 import type { EventLogEntry } from "./app-events.ts";
 import type { CompactionStatus, FallbackStatus } from "./app-tool-stream.ts";
+import type { ChatTurnTiming } from "./chat-turn-timing.ts";
 import type { ChatInputHistoryKeyInput, ChatInputHistoryKeyResult } from "./chat/input-history.ts";
 import type { RealtimeTalkStatus } from "./chat/realtime-talk.ts";
 import type { ChatSideResult } from "./chat/side-result.ts";
@@ -95,6 +96,8 @@ export type AppViewState = {
   chatStreamSegments: Array<{ text: string; ts: number }>;
   chatStream: string | null;
   chatStreamStartedAt: number | null;
+  chatTurnTimingCurrent?: ChatTurnTiming | null;
+  chatTurnTimingLast?: ChatTurnTiming | null;
   chatRunId: string | null;
   chatSideResult: ChatSideResult | null;
   chatSideResultTerminalRuns: Set<string>;
