@@ -46,11 +46,9 @@ describe("sidebar pinned chat layout", () => {
 
     expect(css).toContain(".sidebar-nav {\n  flex: 1 1 0;\n  min-height: 0;");
     expect(css).toContain(
-      ".sidebar-pinned-chats {\n  width: 100%;\n  min-width: 0;\n  min-height: 0;\n  flex: 0 1 auto;",
+      ".sidebar-pinned-chats {\n  width: 100%;\n  min-width: 0;\n  flex: 0 0 auto;",
     );
-    expect(css).toContain(".sidebar-pinned-chats__items {\n  min-width: 0;\n  min-height: 0;");
-    expect(css).toContain("overflow-y: auto;");
-    expect(css).toContain("scrollbar-width: thin;");
+    expect(css).toContain("overflow-y: visible;");
   });
 });
 

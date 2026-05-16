@@ -546,23 +546,13 @@ export function renderSidebarPinnedChats(state: AppViewState) {
   const canAddSlot = slotCount < MAX_PINNED_SESSION_SLOTS;
   const emptySlots = Math.max(0, slotCount - entries.length);
   const canRemoveEmptySlot = slotCount > Math.max(MIN_PINNED_SESSION_SLOTS, entries.length);
-  const pinnedCountLabel = String(entries.length);
-  const pinnedCountTitle =
-    slotCount === entries.length
-      ? `${entries.length} pinned chat${entries.length === 1 ? "" : "s"}`
-      : `${entries.length} pinned chat${entries.length === 1 ? "" : "s"}, ${slotCount} slot${slotCount === 1 ? "" : "s"}`;
 
   return html`
     <section class="sidebar-pinned-chats nav-section">
       <div class="sidebar-pinned-chats__header">
         <span class="sidebar-pinned-chats__label">Pinned chats</span>
         <div class="sidebar-pinned-chats__header-actions">
-          <span
-            class="sidebar-pinned-chats__count"
-            title=${pinnedCountTitle}
-            aria-label=${pinnedCountTitle}
-            >${pinnedCountLabel}</span
-          >
+          <span class="sidebar-pinned-chats__count">${entries.length}/${slotCount}</span>
           <button
             class="sidebar-pinned-chats__action"
             type="button"
