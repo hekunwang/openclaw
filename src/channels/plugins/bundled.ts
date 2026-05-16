@@ -160,18 +160,28 @@ function resolveBundledChannelBoundaryRoot(params: {
   metadata: BundledChannelPluginMetadata;
   modulePath: string;
 }): string {
+  const containsPath = (root: string) => {
+    const resolvedRoot = path.resolve(root);
+    return (
+      params.modulePath === resolvedRoot ||
+      params.modulePath.startsWith(`${resolvedRoot}${path.sep}`)
+    );
+  };
   const overrideRoot = params.pluginsDir
     ? path.resolve(params.pluginsDir, params.metadata.dirName)
     : null;
-  if (
-    overrideRoot &&
-    (params.modulePath === overrideRoot ||
-      params.modulePath.startsWith(`${overrideRoot}${path.sep}`))
-  ) {
+  if (overrideRoot && containsPath(overrideRoot)) {
     return overrideRoot;
   }
+  const metadataRoot =
+    typeof params.metadata.rootDir === "string" && params.metadata.rootDir.length > 0
+      ? params.metadata.rootDir
+      : null;
+  if (metadataRoot && containsPath(metadataRoot)) {
+    return path.resolve(metadataRoot);
+  }
   const distRoot = path.resolve(params.packageRoot, "dist", "extensions", params.metadata.dirName);
-  if (params.modulePath === distRoot || params.modulePath.startsWith(`${distRoot}${path.sep}`)) {
+  if (containsPath(distRoot)) {
     return distRoot;
   }
   return path.resolve(params.packageRoot, "extensions", params.metadata.dirName);

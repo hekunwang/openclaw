@@ -305,6 +305,71 @@ describe("bundled channel entry shape guards", () => {
     }
   });
 
+  it("accepts realpath metadata roots for symlinked live bundled setup entries", async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundled-realpath-"));
+    const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    const realRoot = path.join(tempRoot, "real");
+    const linkRoot = path.join(tempRoot, "live-link");
+    const pluginDir = path.join(realRoot, "dist", "extensions", "alpha");
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.symlinkSync(realRoot, linkRoot, "dir");
+    fs.writeFileSync(
+      path.join(pluginDir, "setup-entry.js"),
+      [
+        "export default {",
+        "  kind: 'bundled-channel-setup-entry',",
+        "  loadSetupPlugin() {",
+        "    return {",
+        "      id: 'alpha',",
+        "      meta: { id: 'alpha', label: 'Alpha setup', blurb: 'setup entry' },",
+        "      capabilities: {},",
+        "      config: {},",
+        "    };",
+        "  },",
+        "};",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    vi.doMock("../../plugins/bundled-channel-runtime.js", () => ({
+      listBundledChannelPluginMetadata: () => [
+        {
+          ...alphaChannelMetadata({ includeSetup: true }),
+          rootDir: pluginDir,
+        },
+      ],
+      resolveBundledChannelGeneratedPath: (
+        _rootDir: string,
+        entry: { built?: string; source?: string },
+        pluginDirName?: string,
+      ) =>
+        path.join(
+          realRoot,
+          "dist",
+          "extensions",
+          pluginDirName ?? "alpha",
+          (entry.built ?? entry.source ?? "./index.js").replace(/^\.\//u, ""),
+        ),
+    }));
+
+    try {
+      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = path.join(linkRoot, "dist", "extensions");
+
+      const bundled = await importFreshModule<typeof import("./bundled.js")>(
+        import.meta.url,
+        "./bundled.js?scope=bundled-realpath-setup-root",
+      );
+
+      const plugin = bundled.getBundledChannelSetupPlugin("alpha");
+      expect(plugin?.id).toBe("alpha");
+      expect(plugin?.meta.blurb).toBe("setup entry");
+    } finally {
+      restoreBundledPluginsDir(previousBundledPluginsDir);
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it("treats direct bundled plugin-tree overrides as scan roots", async () => {
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundled-direct-override-"));
     const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
