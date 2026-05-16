@@ -40,6 +40,18 @@ describe("sidebar menu trigger styles", () => {
   });
 });
 
+describe("sidebar pinned chat layout", () => {
+  it("keeps the pinned chat controls from being flex-clipped below the nav list", () => {
+    const css = readLayoutCss();
+
+    expect(css).toContain(".sidebar-nav {\n  flex: 1 1 0;\n  min-height: 0;");
+    expect(css).toContain(
+      ".sidebar-pinned-chats {\n  width: 100%;\n  min-width: 0;\n  flex: 0 0 auto;",
+    );
+    expect(css).toContain("overflow-y: visible;");
+  });
+});
+
 describe("grouped chat width styles", () => {
   it("uses the config-fed CSS variable with the current fallback", () => {
     const css = readGroupedChatCss();

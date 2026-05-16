@@ -498,7 +498,8 @@
 }
 
 .sidebar-nav {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
@@ -798,11 +799,13 @@
 .sidebar-pinned-chats {
   width: 100%;
   min-width: 0;
+  flex: 0 0 auto;
   display: grid;
   gap: 8px;
   padding-top: 4px;
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .sidebar-pinned-chats__header {
