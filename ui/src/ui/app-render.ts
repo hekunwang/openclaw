@@ -14,6 +14,7 @@ import {
   renderChatControls,
   renderChatMobileToggle,
   renderChatSessionSelect,
+  renderSidebarPinnedChats,
   renderTab,
   resolveAssistantAttachmentAuthToken,
   resolveDashboardHeaderContext,
@@ -1544,6 +1545,7 @@ export function renderApp(state: AppViewState) {
                   `;
                 })}
               </nav>
+              ${renderSidebarPinnedChats(state)}
             </div>
             <div class="sidebar-shell__footer">
               <div class="sidebar-utility-group">
