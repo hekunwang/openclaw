@@ -487,36 +487,36 @@ export function resolvePinnedChatEntries(state: AppViewState): PinnedChatEntry[]
   return entries;
 }
 
-function resolvePinnedChatStatusTone(status: PinnedChatEntry["status"]): string {
-  if (status === "running") {
-    return "sidebar-pinned-chats__status--running";
+export function resolvePinnedChatStatusTone(status: PinnedChatEntry["status"]): string {
+  switch (status) {
+    case "running":
+      return "sidebar-pinned-chats__status--running";
+    case "done":
+      return "sidebar-pinned-chats__status--done";
+    case "failed":
+    case "killed":
+    case "timeout":
+      return "sidebar-pinned-chats__status--error";
+    default:
+      return "sidebar-pinned-chats__status--idle";
   }
-  if (status === "failed" || status === "killed" || status === "timeout") {
-    return "sidebar-pinned-chats__status--error";
-  }
-  if (status === "done") {
-    return "sidebar-pinned-chats__status--done";
-  }
-  return "";
 }
 
-function resolvePinnedChatStatusLabel(status: PinnedChatEntry["status"]): string {
-  if (status === "running") {
-    return "Running";
+export function resolvePinnedChatStatusLabel(status: PinnedChatEntry["status"]): string {
+  switch (status) {
+    case "running":
+      return "Answering";
+    case "done":
+      return "Completed";
+    case "failed":
+      return "Failed";
+    case "killed":
+      return "Killed";
+    case "timeout":
+      return "Timed out";
+    default:
+      return "Idle";
   }
-  if (status === "failed") {
-    return "Failed";
-  }
-  if (status === "killed") {
-    return "Killed";
-  }
-  if (status === "timeout") {
-    return "Timed out";
-  }
-  if (status === "done") {
-    return "Done";
-  }
-  return "Idle";
 }
 
 function navigateToPinnedChat(state: AppViewState, sessionKey: string) {

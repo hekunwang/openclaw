@@ -60,6 +60,8 @@ import {
   reorderPinnedChatSession,
   resolveDashboardHeaderContext,
   resolvePinnedChatEntries,
+  resolvePinnedChatStatusLabel,
+  resolvePinnedChatStatusTone,
   resolveSessionOptionGroups,
   resolveSessionDisplayName,
   switchChatSession,
@@ -932,6 +934,13 @@ describe("createChatSession", () => {
 });
 
 describe("pinned chats", () => {
+  it("keeps idle status lights explicit", () => {
+    expect(resolvePinnedChatStatusTone(null)).toBe("sidebar-pinned-chats__status--idle");
+    expect(resolvePinnedChatStatusLabel(null)).toBe("Idle");
+    expect(resolvePinnedChatStatusTone("running")).toBe("sidebar-pinned-chats__status--running");
+    expect(resolvePinnedChatStatusLabel("running")).toBe("Answering");
+  });
+
   it("deduplicates labels for pinned chat entries", () => {
     const state = {
       sessionKey: "agent:main:subagent:one",

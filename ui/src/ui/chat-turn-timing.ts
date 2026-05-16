@@ -142,6 +142,7 @@ export function formatLatencyMs(value: number | null | undefined): string | null
 export function summarizeChatTurnTiming(
   timing: ChatTurnTiming,
 ): Array<{ label: string; value: string }> {
+  const submit = formatLatencyMs(0);
   const ack = formatLatencyMs(timing.ackAt != null ? timing.ackAt - timing.submittedAt : null);
   const run = formatLatencyMs(
     timing.agentStartedAt != null ? timing.agentStartedAt - timing.submittedAt : null,
@@ -154,6 +155,7 @@ export function summarizeChatTurnTiming(
   );
   const done = formatLatencyMs(timing.finalAt != null ? timing.finalAt - timing.submittedAt : null);
   return [
+    submit ? { label: "Submit", value: submit } : null,
     ack ? { label: "Ack", value: ack } : null,
     run ? { label: "Run", value: run } : null,
     yellow ? { label: "Yellow", value: yellow } : null,

@@ -41,6 +41,7 @@ describe("chat-turn-timing", () => {
       finalAt: 5_000,
     });
     expect(summarizeChatTurnTiming(state.chatTurnTimingLast!)).toEqual([
+      { label: "Submit", value: "0ms" },
       { label: "Ack", value: "80ms" },
       { label: "Run", value: "1.50s" },
       { label: "Yellow", value: "2.10s" },
@@ -74,5 +75,23 @@ describe("chat-turn-timing", () => {
     expect(getVisibleChatTurnTiming(current, last, "main")).toBe(current);
     expect(getVisibleChatTurnTiming(null, last, "main")).toBe(last);
     expect(getVisibleChatTurnTiming(current, last, "other")).toBeNull();
+  });
+
+  it("keeps the strip renderable before the gateway ack arrives", () => {
+    const state: {
+      sessionKey: string;
+      chatTurnTimingCurrent: ChatTurnTiming | null;
+      chatTurnTimingLast: ChatTurnTiming | null;
+    } = {
+      sessionKey: "main",
+      chatTurnTimingCurrent: null,
+      chatTurnTimingLast: null,
+    };
+
+    beginChatTurnTiming(state, { runId: "run-1", submittedAt: 1_000 });
+
+    expect(summarizeChatTurnTiming(state.chatTurnTimingCurrent!)).toEqual([
+      { label: "Submit", value: "0ms" },
+    ]);
   });
 });
