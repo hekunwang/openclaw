@@ -125,15 +125,40 @@ describe("cacheRetention default behavior", () => {
     });
   });
 
-  it("returns undefined for non-Anthropic providers", () => {
+  it("defaults to long for OpenAI-like providers without explicit config", () => {
     const agent: { streamFn?: StreamFn } = {};
     const cfg = undefined;
     const provider = "openai";
     const modelId = "gpt-4";
 
+    applyExtraParamsToAgent(
+      agent,
+      cfg,
+      provider,
+      modelId,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        api: "openai-responses",
+        provider,
+        id: modelId,
+      } as Parameters<typeof applyExtraParamsToAgent>[8],
+    );
+
+    expect(resolveCacheRetention(cfg, provider, "openai-responses", modelId)).toBe("long");
+  });
+
+  it("returns undefined for unrelated providers without explicit cache config", () => {
+    const agent: { streamFn?: StreamFn } = {};
+    const cfg = undefined;
+    const provider = "mistral";
+    const modelId = "mistral-small";
+
     applyExtraParamsToAgent(agent, cfg, provider, modelId);
 
-    expect(resolveCacheRetention(cfg, provider, undefined, modelId)).toBeUndefined();
+    expect(resolveCacheRetention(cfg, provider, "openai-completions", modelId)).toBeUndefined();
   });
 
   it("prefers explicit cacheRetention over default", () => {

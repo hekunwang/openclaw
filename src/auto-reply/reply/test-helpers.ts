@@ -44,6 +44,7 @@ export function createMockFollowupRun(
       provider: "anthropic",
       model: "claude",
       thinkLevel: "low",
+      fastMode: false,
       verboseLevel: "off",
       elevatedLevel: "off",
       bashElevated: {

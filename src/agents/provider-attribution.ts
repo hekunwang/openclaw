@@ -132,7 +132,13 @@ const OPENAI_RESPONSES_APIS = new Set([
   "azure-openai-responses",
   "openai-codex-responses",
 ]);
-const OPENAI_RESPONSES_PROVIDERS = new Set(["openai", "azure-openai", "azure-openai-responses"]);
+const OPENAI_RESPONSES_PROVIDERS = new Set([
+  "openai",
+  "custom-openai",
+  "custom-openai-responses",
+  "azure-openai",
+  "azure-openai-responses",
+]);
 const MANIFEST_PROVIDER_ENDPOINT_CLASSES = new Set<ProviderEndpointClass>([
   "anthropic-public",
   "cerebras-native",
@@ -438,6 +444,8 @@ function resolveKnownProviderFamily(provider: string | undefined): string {
   switch (provider) {
     case "openai":
     case "openai-codex":
+    case "custom-openai":
+    case "custom-openai-responses":
     case "azure-openai":
     case "azure-openai-responses":
       return "openai-family";
@@ -689,6 +697,13 @@ export function resolveProviderRequestCapabilities(
 
   const isResponsesApi = isOpenAIResponsesApi(api);
   const promptCacheKeySupport = readCompatBoolean(input.compat, "supportsPromptCacheKey");
+  const isCustomOpenAIResponsesProvider =
+    (provider === "custom-openai" || provider === "custom-openai-responses") &&
+    api === "openai-responses";
+  const isProxyOpenAICodexResponsesProvider =
+    provider === "openai-codex" &&
+    api === "openai-responses" &&
+    policy.usesExplicitProxyLikeEndpoint;
   // Default strip behavior (proxy-like endpoints with responses APIs) is
   // preserved as a safety net for providers that reject prompt_cache_key,
   // see #48155 (Volcano Engine DeepSeek). Operators running their payload
@@ -696,13 +711,18 @@ export function resolveProviderRequestCapabilities(
   // (CLIProxy, LiteLLM, etc.) can opt out via compat.supportsPromptCacheKey
   // to recover prompt caching; providers known to reject the field can
   // force the strip with compat.supportsPromptCacheKey = false even on
-  // native endpoints.
+  // native endpoints. Local custom OpenAI-compatible routes and proxied
+  // OpenAI Codex routes are known-good in Hunter's deployment, so preserve
+  // the field by default for those local providers.
   const shouldStripResponsesPromptCache =
     promptCacheKeySupport === true
       ? false
       : promptCacheKeySupport === false
         ? isResponsesApi
-        : isResponsesApi && policy.usesExplicitProxyLikeEndpoint;
+        : isResponsesApi &&
+          policy.usesExplicitProxyLikeEndpoint &&
+          !isCustomOpenAIResponsesProvider &&
+          !isProxyOpenAICodexResponsesProvider;
 
   return {
     ...policy,
@@ -711,15 +731,21 @@ export function resolveProviderRequestCapabilities(
       (provider === "openai" && api === "openai-responses" && endpointClass === "openai-public") ||
       (provider === "openai-codex" &&
         (api === "openai-codex-responses" || api === "openai-responses") &&
-        endpointClass === "openai-codex"),
+        endpointClass === "openai-codex") ||
+      isCustomOpenAIResponsesProvider ||
+      isProxyOpenAICodexResponsesProvider,
     supportsOpenAIReasoningCompatPayload:
       provider !== undefined &&
       api !== undefined &&
-      !policy.usesExplicitProxyLikeEndpoint &&
+      (!policy.usesExplicitProxyLikeEndpoint ||
+        isCustomOpenAIResponsesProvider ||
+        isProxyOpenAICodexResponsesProvider) &&
       (provider === "openai" ||
         provider === "openai-codex" ||
         provider === "azure-openai" ||
-        provider === "azure-openai-responses") &&
+        provider === "azure-openai-responses" ||
+        provider === "custom-openai" ||
+        provider === "custom-openai-responses") &&
       (api === "openai-completions" ||
         api === "openai-responses" ||
         api === "openai-codex-responses" ||
@@ -736,8 +762,9 @@ export function resolveProviderRequestCapabilities(
       readCompatBoolean(input.compat, "supportsStore") !== false &&
       provider !== undefined &&
       isResponsesApi &&
-      OPENAI_RESPONSES_PROVIDERS.has(provider) &&
-      policy.usesKnownNativeOpenAIEndpoint,
+      ((OPENAI_RESPONSES_PROVIDERS.has(provider) && policy.usesKnownNativeOpenAIEndpoint) ||
+        isCustomOpenAIResponsesProvider ||
+        isProxyOpenAICodexResponsesProvider),
     shouldStripResponsesPromptCache,
     // Native endpoint class is the real signal here. Users can point a generic
     // provider key at Moonshot or DashScope and still need streaming usage.

@@ -30,6 +30,22 @@ describe("prompt cache retention", () => {
     ).toBeUndefined();
   });
 
+  it("defaults cacheRetention to long for OpenAI-like providers", () => {
+    expect(resolveCacheRetention(undefined, "openai", "openai-responses", "gpt-5.4")).toBe("long");
+    expect(
+      resolveCacheRetention(undefined, "custom-openai-responses", "openai-responses", "gpt-5.4"),
+    ).toBe("long");
+    expect(resolveCacheRetention(undefined, "openai-codex", "openai-responses", "gpt-5.4")).toBe(
+      "long",
+    );
+  });
+
+  it("still returns undefined for unrelated providers without explicit cache config", () => {
+    expect(
+      resolveCacheRetention(undefined, "mistral", "openai-completions", "mistral-small"),
+    ).toBeUndefined();
+  });
+
   it("identifies supported direct Google cache families", () => {
     expect(
       isGooglePromptCacheEligible({

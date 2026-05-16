@@ -575,6 +575,36 @@ describe("createFollowupRunner runtime config", () => {
     expect(call?.config).toBe(runtimeConfig);
   });
 
+  it("forwards fastMode into queued embedded followup runs", async () => {
+    runEmbeddedPiAgentMock.mockResolvedValueOnce({
+      payloads: [],
+      meta: {},
+    });
+
+    const runner = createFollowupRunner({
+      typing: createMockTypingController(),
+      typingMode: "instant",
+      defaultModel: "openai/gpt-5.4",
+    });
+
+    await runner(
+      createQueuedRun({
+        run: {
+          provider: "openai-codex",
+          model: "gpt-5.4",
+          fastMode: true,
+        },
+      }),
+    );
+
+    const call = runEmbeddedPiAgentMock.mock.calls.at(-1)?.[0] as
+      | {
+          fastMode?: boolean;
+        }
+      | undefined;
+    expect(call?.fastMode).toBe(true);
+  });
+
   it("resolves queued embedded followups before preflight helpers read config", async () => {
     const sourceConfig: OpenClawConfig = {
       skills: {

@@ -125,6 +125,44 @@ describe("listThinkingLevels", () => {
     expect(listThinkingLevels("openai", "gpt-5.4")).not.toContain("adaptive");
   });
 
+  it("includes xhigh for local custom-openai GPT-5.4/GPT-5.5 routes without provider hooks", () => {
+    expect(listThinkingLevels("custom-openai", "gpt-5.4")).toContain("xhigh");
+    expect(listThinkingLevels("custom-openai-responses", "gpt-5.4-pro")).toContain("xhigh");
+    expect(listThinkingLevels("custom-openai", "gpt-5.5")).toContain("xhigh");
+    expect(listThinkingLevels("custom-openai-responses", "gpt-5.5-pro")).toContain("xhigh");
+    expect(listThinkingLevels("custom-openai", "gpt-4o")).not.toContain("xhigh");
+  });
+
+  it("includes xhigh for local openai-codex GPT-5.4/GPT-5.5 routes without provider hooks", () => {
+    expect(listThinkingLevels("openai-codex", "gpt-5.4")).toContain("xhigh");
+    expect(listThinkingLevels("openai-codex", "gpt-5.4-pro")).toContain("xhigh");
+    expect(listThinkingLevels("openai-codex", "gpt-5.5")).toContain("xhigh");
+    expect(listThinkingLevels("openai-codex", "gpt-5.5-pro")).toContain("xhigh");
+    expect(listThinkingLevels("openai-codex", "gpt-5.3-codex")).not.toContain("xhigh");
+  });
+
+  it("keeps bundled openai GPT-5.2 xhigh support", () => {
+    providerRuntimeMocks.resolveProviderThinkingProfile.mockImplementation(
+      ({ provider, context }) =>
+        provider === "openai" &&
+        (context.modelId === "gpt-5.2" || context.modelId === "gpt-5.4-mini")
+          ? {
+              levels: [
+                { id: "off" },
+                { id: "minimal" },
+                { id: "low" },
+                { id: "medium" },
+                { id: "high" },
+                { id: "xhigh" },
+              ],
+            }
+          : undefined,
+    );
+
+    expect(listThinkingLevels("openai", "gpt-5.2")).toContain("xhigh");
+    expect(listThinkingLevels("openai", "gpt-5.4-mini")).toContain("xhigh");
+  });
+
   it("uses provider thinking profiles for adaptive and max support", () => {
     providerRuntimeMocks.resolveProviderThinkingProfile.mockImplementation(({ provider }) =>
       provider === "anthropic"

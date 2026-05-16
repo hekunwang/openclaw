@@ -1107,6 +1107,50 @@ describe("provider attribution", () => {
           supportsNativeStreamingUsageCompat: false,
         },
       },
+      {
+        name: "custom-openai responses proxy parity",
+        input: {
+          provider: "custom-openai-responses",
+          api: "openai-responses",
+          baseUrl: "https://proxy.example.com/v1",
+          capability: "llm" as const,
+          transport: "stream" as const,
+        },
+        expected: {
+          knownProviderFamily: "openai-family",
+          endpointClass: "custom",
+          isKnownNativeEndpoint: false,
+          allowsOpenAIServiceTier: true,
+          supportsOpenAIReasoningCompatPayload: true,
+          allowsResponsesStore: true,
+          supportsResponsesStoreField: true,
+          shouldStripResponsesPromptCache: false,
+          allowsAnthropicServiceTier: false,
+          supportsNativeStreamingUsageCompat: false,
+        },
+      },
+      {
+        name: "proxied openai-codex responses parity",
+        input: {
+          provider: "openai-codex",
+          api: "openai-responses",
+          baseUrl: "https://proxy.example.com/v1",
+          capability: "llm" as const,
+          transport: "stream" as const,
+        },
+        expected: {
+          knownProviderFamily: "openai-family",
+          endpointClass: "custom",
+          isKnownNativeEndpoint: false,
+          allowsOpenAIServiceTier: true,
+          supportsOpenAIReasoningCompatPayload: true,
+          allowsResponsesStore: true,
+          supportsResponsesStoreField: true,
+          shouldStripResponsesPromptCache: false,
+          allowsAnthropicServiceTier: false,
+          supportsNativeStreamingUsageCompat: false,
+        },
+      },
     ];
 
     for (const testCase of cases) {

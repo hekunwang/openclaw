@@ -7,6 +7,8 @@ export type ThinkingCatalogEntry = {
 };
 
 const BASE_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high"] as const;
+const OPENAI_XHIGH_MODEL_RE = /^gpt-5\.(?:2|[45])(?:-|$)/i;
+const LOCAL_OPENAI_XHIGH_MODEL_RE = /^gpt-5\.[45](?:-|$)/i;
 
 export function normalizeThinkingProviderId(provider?: string | null): string {
   if (!provider) {
@@ -66,12 +68,30 @@ export function normalizeThinkLevel(raw?: string | null): string | undefined {
   return undefined;
 }
 
+export function supportsXHighThinking(provider?: string | null, model?: string | null): boolean {
+  const normalizedProvider = normalizeThinkingProviderId(provider);
+  const normalizedModel = normalizeLowercaseStringOrEmpty(model ?? "");
+  if (!normalizedProvider || !normalizedModel) {
+    return false;
+  }
+  if (normalizedProvider === "openai") {
+    return OPENAI_XHIGH_MODEL_RE.test(normalizedModel);
+  }
+  return (
+    (normalizedProvider === "openai-codex" ||
+      normalizedProvider === "custom-openai" ||
+      normalizedProvider === "custom-openai-responses") &&
+    LOCAL_OPENAI_XHIGH_MODEL_RE.test(normalizedModel)
+  );
+}
+
 export function listThinkingLevelLabels(
   provider?: string | null,
   model?: string | null,
 ): readonly string[] {
-  void provider;
-  void model;
+  if (supportsXHighThinking(provider, model)) {
+    return ["off", "minimal", "low", "medium", "high", "xhigh"];
+  }
   return BASE_THINKING_LEVELS;
 }
 

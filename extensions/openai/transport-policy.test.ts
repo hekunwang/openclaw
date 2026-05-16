@@ -125,4 +125,18 @@ describe("openai transport policy", () => {
     expect(policy?.headers?.["x-openclaw-session-id"]).toBe("session-123");
     expect(policy?.degradeCooldownMs).toBe(60_000);
   });
+
+  it("keeps custom OpenAI-compatible proxy routes off native websocket session policy", () => {
+    const policy = resolveOpenAIWebSocketSessionPolicy({
+      provider: "custom-openai-responses",
+      modelId: "gpt-5.4",
+      model: {
+        ...nativeModel,
+        provider: "custom-openai-responses",
+        baseUrl: "https://proxy.example.com/v1",
+      },
+      sessionId: "session-123",
+    });
+    expect(policy).toBeUndefined();
+  });
 });

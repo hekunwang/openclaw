@@ -1199,6 +1199,37 @@ describe("chat session controls", () => {
     ).toBe("Override: maximum");
   });
 
+  it.each([
+    ["custom-openai", "gpt-5.5"],
+    ["custom-openai-responses", "gpt-5.4-pro"],
+    ["openai-codex", "gpt-5.5"],
+    ["openai", "gpt-5.2"],
+  ])(
+    "shows xhigh for %s %s thinking controls without server-provided levels",
+    (modelProvider, model) => {
+      const { state } = createChatHeaderState({
+        model,
+        modelProvider,
+        defaultsThinkingDefault: "high",
+      });
+      const container = document.createElement("div");
+      render(renderChatSessionSelect(state), container);
+
+      const thinkingSelect = container.querySelector<HTMLSelectElement>(
+        'select[data-chat-thinking-select="true"]',
+      );
+      const options = [...(thinkingSelect?.options ?? [])].map((option) => option.value);
+
+      expect(options).toContain("xhigh");
+      expect(options).not.toContain("adaptive");
+      expect(
+        [...(thinkingSelect?.options ?? [])]
+          .find((option) => option.value === "xhigh")
+          ?.textContent?.trim(),
+      ).toBe("Override: xhigh");
+    },
+  );
+
   it("labels chat thinking default from the active session row", () => {
     const { state } = createChatHeaderState({
       model: "gemma4:hermes-e4b",

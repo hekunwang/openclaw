@@ -192,12 +192,18 @@ export function resolveThinkingProfile(params: {
     provider: context.normalizedProvider,
     modelId: context.modelKey || context.modelId,
   };
+  const localXHighFallbackAllowed =
+    (context.normalizedProvider === "custom-openai" ||
+      context.normalizedProvider === "custom-openai-responses" ||
+      context.normalizedProvider === "openai-codex") &&
+    /^gpt-5\.[45](?:-|$)/.test(policyContext.modelId);
   if (
     binaryDecision !== true &&
-    resolveProviderXHighThinking({
-      provider: context.normalizedProvider,
-      context: policyContext,
-    }) === true
+    (localXHighFallbackAllowed ||
+      resolveProviderXHighThinking({
+        provider: context.normalizedProvider,
+        context: policyContext,
+      }) === true)
   ) {
     appendProfileLevel(profile, "xhigh");
   }
@@ -221,6 +227,18 @@ function supportsThinkingLevel(
 }
 
 export function supportsXHighThinking(provider?: string | null, model?: string | null): boolean {
+  const modelKey = normalizeOptionalLowercaseString(model);
+  const providerRaw = normalizeOptionalString(provider);
+  const providerKey = providerRaw ? normalizeProviderId(providerRaw) : "";
+  if (
+    modelKey &&
+    (providerKey === "custom-openai" ||
+      providerKey === "custom-openai-responses" ||
+      providerKey === "openai-codex") &&
+    /^gpt-5\.[45](?:-|$)/.test(modelKey)
+  ) {
+    return true;
+  }
   return supportsThinkingLevel(provider, model, "xhigh");
 }
 

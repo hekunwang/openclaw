@@ -173,4 +173,68 @@ describe("openai responses payload policy", () => {
     expect(policy.allowsServiceTier).toBe(true);
     expect(policy.shouldStripStore).toBe(false);
   });
+
+  it("preserves OpenAI Responses compat fields for custom-openai proxy routes", () => {
+    const payload = {
+      store: false,
+      prompt_cache_key: "session-custom-openai",
+      prompt_cache_retention: "24h",
+    } as Record<string, unknown>;
+
+    applyOpenAIResponsesPayloadPolicy(
+      payload,
+      resolveOpenAIResponsesPayloadPolicy(
+        {
+          api: "openai-responses",
+          provider: "custom-openai-responses",
+          baseUrl: "https://proxy.example.com/v1",
+          contextWindow: 200_000,
+        },
+        {
+          enablePromptCacheStripping: true,
+          enableServerCompaction: true,
+          storeMode: "provider-policy",
+        },
+      ),
+    );
+
+    expect(payload.store).toBe(true);
+    expect(payload.prompt_cache_key).toBe("session-custom-openai");
+    expect(payload.prompt_cache_retention).toBe("24h");
+    expect(payload.context_management).toEqual([
+      { type: "compaction", compact_threshold: 140_000 },
+    ]);
+  });
+
+  it("preserves OpenAI Responses compat fields for proxied openai-codex responses routes", () => {
+    const payload = {
+      store: false,
+      prompt_cache_key: "session-openai-codex-proxy",
+      prompt_cache_retention: "24h",
+    } as Record<string, unknown>;
+
+    applyOpenAIResponsesPayloadPolicy(
+      payload,
+      resolveOpenAIResponsesPayloadPolicy(
+        {
+          api: "openai-responses",
+          provider: "openai-codex",
+          baseUrl: "https://proxy.example.com/v1",
+          contextWindow: 200_000,
+        },
+        {
+          enablePromptCacheStripping: true,
+          enableServerCompaction: true,
+          storeMode: "provider-policy",
+        },
+      ),
+    );
+
+    expect(payload.store).toBe(true);
+    expect(payload.prompt_cache_key).toBe("session-openai-codex-proxy");
+    expect(payload.prompt_cache_retention).toBe("24h");
+    expect(payload.context_management).toEqual([
+      { type: "compaction", compact_threshold: 140_000 },
+    ]);
+  });
 });

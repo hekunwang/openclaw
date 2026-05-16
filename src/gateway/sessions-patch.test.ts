@@ -429,26 +429,36 @@ describe("gateway sessions patch", () => {
     expect(entry.thinkingLevel).toBe("xhigh");
   });
 
-  test("accepts xhigh thinking patches from bundled startup-lazy provider policy without catalog", async () => {
-    const entry = expectPatchOk(
-      await runPatch({
-        cfg: {
-          agents: {
-            defaults: {
-              model: { primary: "openai-codex/gpt-5.5" },
+  test.each([
+    ["custom-openai/gpt-5.4"],
+    ["custom-openai/gpt-5.5"],
+    ["custom-openai-responses/gpt-5.4-pro"],
+    ["openai/gpt-5.2"],
+    ["openai-codex/gpt-5.4"],
+    ["openai-codex/gpt-5.5"],
+  ])(
+    "accepts xhigh thinking patches from bundled startup-lazy provider policy for %s without catalog",
+    async (modelRef) => {
+      const entry = expectPatchOk(
+        await runPatch({
+          cfg: {
+            agents: {
+              defaults: {
+                model: { primary: modelRef },
+              },
             },
+          } as OpenClawConfig,
+          patch: {
+            key: MAIN_SESSION_KEY,
+            thinkingLevel: "xhigh",
           },
-        } as OpenClawConfig,
-        patch: {
-          key: MAIN_SESSION_KEY,
-          thinkingLevel: "xhigh",
-        },
-        loadGatewayModelCatalog: async () => [],
-      }),
-    );
+          loadGatewayModelCatalog: async () => [],
+        }),
+      );
 
-    expect(entry.thinkingLevel).toBe("xhigh");
-  });
+      expect(entry.thinkingLevel).toBe("xhigh");
+    },
+  );
 
   test("sets spawnedBy for ACP sessions", async () => {
     const entry = expectPatchOk(

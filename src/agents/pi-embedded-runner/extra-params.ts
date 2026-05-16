@@ -26,8 +26,14 @@ import {
 import {
   createOpenAICompletionsStrictMessageKeysWrapper,
   createOpenAICompletionsToolsCompatWrapper,
+  createOpenAIFastModeWrapper,
   createOpenAIResponsesContextManagementWrapper,
+  createOpenAIServiceTierWrapper,
   createOpenAIStringContentWrapper,
+  createOpenAITextVerbosityWrapper,
+  resolveOpenAIFastMode,
+  resolveOpenAIServiceTier,
+  resolveOpenAITextVerbosity,
 } from "./openai-stream-wrappers.js";
 import { resolveCacheRetention } from "./prompt-cache-retention.js";
 import { createOpenRouterSystemCacheWrapper } from "./proxy-stream-wrappers.js";
@@ -371,42 +377,43 @@ function createStreamFnWithExtraParams(
   provider: string,
   model?: ProviderRuntimeModel,
 ): StreamFn | undefined {
-  if (!extraParams || Object.keys(extraParams).length === 0) {
-    return undefined;
-  }
-
-  const streamParams: CacheRetentionStreamOptions = {};
-  if (typeof extraParams.temperature === "number") {
-    streamParams.temperature = extraParams.temperature;
-  }
-  if (typeof extraParams.maxTokens === "number") {
-    streamParams.maxTokens = extraParams.maxTokens;
-  }
-  const transport = resolveSupportedTransport(extraParams.transport);
-  if (transport) {
-    streamParams.transport = transport;
-  } else if (extraParams.transport != null) {
-    const transportSummary =
-      typeof extraParams.transport === "string"
-        ? extraParams.transport
-        : typeof extraParams.transport;
-    log.warn(`ignoring invalid transport param: ${transportSummary}`);
-  }
-  const cachedContent =
-    typeof extraParams.cachedContent === "string"
-      ? extraParams.cachedContent
-      : typeof extraParams.cached_content === "string"
-        ? extraParams.cached_content
-        : undefined;
-  if (typeof cachedContent === "string" && cachedContent.trim()) {
-    streamParams.cachedContent = cachedContent.trim();
-  }
   const initialCacheRetention = resolveCacheRetention(
     extraParams,
     provider,
     typeof model?.api === "string" ? model.api : undefined,
     typeof model?.id === "string" ? model.id : undefined,
   );
+  if ((!extraParams || Object.keys(extraParams).length === 0) && !initialCacheRetention) {
+    return undefined;
+  }
+
+  const effectiveExtraParams = extraParams ?? {};
+  const streamParams: CacheRetentionStreamOptions = {};
+  if (typeof effectiveExtraParams.temperature === "number") {
+    streamParams.temperature = effectiveExtraParams.temperature;
+  }
+  if (typeof effectiveExtraParams.maxTokens === "number") {
+    streamParams.maxTokens = effectiveExtraParams.maxTokens;
+  }
+  const transport = resolveSupportedTransport(effectiveExtraParams.transport);
+  if (transport) {
+    streamParams.transport = transport;
+  } else if (effectiveExtraParams.transport != null) {
+    const transportSummary =
+      typeof effectiveExtraParams.transport === "string"
+        ? effectiveExtraParams.transport
+        : typeof effectiveExtraParams.transport;
+    log.warn(`ignoring invalid transport param: ${transportSummary}`);
+  }
+  const cachedContent =
+    typeof effectiveExtraParams.cachedContent === "string"
+      ? effectiveExtraParams.cachedContent
+      : typeof effectiveExtraParams.cached_content === "string"
+        ? effectiveExtraParams.cached_content
+        : undefined;
+  if (typeof cachedContent === "string" && cachedContent.trim()) {
+    streamParams.cachedContent = cachedContent.trim();
+  }
   if (Object.keys(streamParams).length > 0 || initialCacheRetention) {
     const debugParams = initialCacheRetention
       ? { ...streamParams, cacheRetention: initialCacheRetention }
@@ -692,6 +699,25 @@ function applyPostPluginStreamWrappers(
   ctx.agent.streamFn = createOpenAICompletionsToolsCompatWrapper(ctx.agent.streamFn);
 
   if (!ctx.providerWrapperHandled) {
+    // Apply OpenAI-compatible request params even when no provider plugin is
+    // registered for the configured provider id (for example custom-openai).
+    // Provider-owned OpenAI hooks already do this, so keep this fallback behind
+    // providerWrapperHandled to avoid duplicate wrapping for first-class plugins.
+    if (resolveOpenAIFastMode(ctx.effectiveExtraParams)) {
+      ctx.agent.streamFn = createOpenAIFastModeWrapper(ctx.agent.streamFn);
+    }
+    const openAIServiceTier = resolveOpenAIServiceTier(ctx.effectiveExtraParams);
+    if (openAIServiceTier) {
+      ctx.agent.streamFn = createOpenAIServiceTierWrapper(ctx.agent.streamFn, openAIServiceTier);
+    }
+    const openAITextVerbosity = resolveOpenAITextVerbosity(ctx.effectiveExtraParams);
+    if (openAITextVerbosity) {
+      ctx.agent.streamFn = createOpenAITextVerbosityWrapper(
+        ctx.agent.streamFn,
+        openAITextVerbosity,
+      );
+    }
+
     ctx.agent.streamFn = createDeepSeekV4OpenAICompatibleThinkingWrapper({
       baseStreamFn: ctx.agent.streamFn,
       thinkingLevel: ctx.thinkingLevel,

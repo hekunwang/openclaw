@@ -64,7 +64,13 @@ const OPENAI_RESPONSES_APIS = new Set([
   "azure-openai-responses",
   "openai-codex-responses",
 ]);
-const OPENAI_RESPONSES_PROVIDERS = new Set(["openai", "azure-openai", "azure-openai-responses"]);
+const OPENAI_RESPONSES_PROVIDERS = new Set([
+  "openai",
+  "custom-openai",
+  "custom-openai-responses",
+  "azure-openai",
+  "azure-openai-responses",
+]);
 const LOCAL_ENDPOINT_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 const MODELSTUDIO_NATIVE_BASE_URLS = new Set([
   "https://coding-intl.dashscope.aliyuncs.com/v1",
@@ -233,12 +239,20 @@ function resolveOpenAIResponsesPayloadCapabilities(
     endpointClass === "default" ? provider === "openai" : usesKnownNativeOpenAIEndpoint;
   const usesExplicitProxyLikeEndpoint = usesConfiguredBaseUrl && !usesKnownNativeOpenAIEndpoint;
   const promptCacheKeySupport = readCompatPayloadBoolean(model.compat, "supportsPromptCacheKey");
+  const isCustomOpenAIResponsesProvider =
+    (provider === "custom-openai" || provider === "custom-openai-responses") &&
+    api === "openai-responses";
+  const isProxyOpenAICodexResponsesProvider =
+    provider === "openai-codex" && api === "openai-responses" && usesExplicitProxyLikeEndpoint;
   const shouldStripResponsesPromptCache =
     promptCacheKeySupport === true
       ? false
       : promptCacheKeySupport === false
         ? isResponsesApi
-        : isResponsesApi && usesExplicitProxyLikeEndpoint;
+        : isResponsesApi &&
+          usesExplicitProxyLikeEndpoint &&
+          !isCustomOpenAIResponsesProvider &&
+          !isProxyOpenAICodexResponsesProvider;
   const supportsResponsesStoreField =
     readCompatPayloadBoolean(model.compat, "supportsStore") !== false && isResponsesApi;
 
@@ -247,12 +261,15 @@ function resolveOpenAIResponsesPayloadCapabilities(
       (provider === "openai" && api === "openai-responses" && endpointClass === "openai-public") ||
       (provider === "openai-codex" &&
         (api === "openai-codex-responses" || api === "openai-responses") &&
-        endpointClass === "openai-codex"),
+        endpointClass === "openai-codex") ||
+      isCustomOpenAIResponsesProvider ||
+      isProxyOpenAICodexResponsesProvider,
     allowsResponsesStore:
       supportsResponsesStoreField &&
       provider !== undefined &&
-      OPENAI_RESPONSES_PROVIDERS.has(provider) &&
-      usesKnownNativeOpenAIEndpoint,
+      ((OPENAI_RESPONSES_PROVIDERS.has(provider) && usesKnownNativeOpenAIEndpoint) ||
+        isCustomOpenAIResponsesProvider ||
+        isProxyOpenAICodexResponsesProvider),
     shouldStripResponsesPromptCache,
     supportsResponsesStoreField,
     usesKnownNativeOpenAIRoute,
@@ -295,7 +312,12 @@ function shouldEnableOpenAIResponsesServerCompaction(
   if (configured === true) {
     return true;
   }
-  return provider === "openai";
+  return (
+    provider === "openai" ||
+    provider === "openai-codex" ||
+    provider === "custom-openai" ||
+    provider === "custom-openai-responses"
+  );
 }
 
 function stripDisabledOpenAIReasoningPayload(payloadObj: Record<string, unknown>): void {

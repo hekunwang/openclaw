@@ -326,7 +326,11 @@ function installFullProviderRuntimeDepsForTest() {
       if (params.provider === "openai") {
         return createTestOpenAIProviderWrapper(params, true);
       }
-      if (params.provider === "openai-codex") {
+      if (
+        params.provider === "openai-codex" ||
+        params.provider === "custom-openai" ||
+        params.provider === "custom-openai-responses"
+      ) {
         return createTestOpenAIProviderWrapper(params, false);
       }
       if (params.provider === "azure-openai" || params.provider === "azure-openai-responses") {
@@ -2598,6 +2602,46 @@ describe("applyExtraParamsToAgent", () => {
     expect(calls[0]?.cacheRetention).toBe("long");
   });
 
+  it("defaults cacheRetention to long for OpenAI-like responses providers", () => {
+    const { calls, agent } = createOptionsCaptureAgent();
+
+    applyExtraParamsToAgent(
+      agent,
+      undefined,
+      "custom-openai-responses",
+      "gpt-5.4",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      {
+        api: "openai-responses",
+        provider: "custom-openai-responses",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+      } as Model<"openai-responses">,
+      undefined,
+      undefined,
+      { preparedExtraParams: {} },
+    );
+
+    const context: Context = { messages: [] };
+
+    void agent.streamFn?.(
+      {
+        api: "openai-responses",
+        provider: "custom-openai-responses",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+      } as Model<"openai-responses">,
+      context,
+      {},
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.cacheRetention).toBe("long");
+  });
+
   it("adds Anthropic 1M beta header when context1m is enabled for Opus/Sonnet", () => {
     const { calls, agent } = createOptionsCaptureAgent();
     const cfg = buildModelConfig("anthropic/claude-opus-4-6", { context1m: true });
@@ -3564,6 +3608,44 @@ describe("applyExtraParamsToAgent", () => {
     expect(payload).not.toHaveProperty("service_tier");
   });
 
+  it("maps fast mode to priority service_tier for custom-openai responses providers", () => {
+    const payload = runResponsesPayloadMutationCase({
+      applyProvider: "custom-openai-responses",
+      applyModelId: "gpt-5.4",
+      extraParamsOverride: { fastMode: true },
+      model: {
+        api: "openai-responses",
+        provider: "custom-openai-responses",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+      } as unknown as Model<"openai-responses">,
+      payload: {
+        store: false,
+      },
+    });
+    expect(payload.service_tier).toBe("priority");
+  });
+
+  it("applies fast mode for custom-openai providers without plugin wrappers", () => {
+    withMinimalProviderRuntimeDepsForTest(() => {
+      const payload = runResponsesPayloadMutationCase({
+        applyProvider: "custom-openai",
+        applyModelId: "gpt-5.5",
+        extraParamsOverride: { fastMode: true },
+        model: {
+          api: "openai-responses",
+          provider: "custom-openai",
+          id: "gpt-5.5",
+          baseUrl: "https://sub2api.whk.me",
+        } as unknown as Model<"openai-responses">,
+        payload: {
+          store: false,
+        },
+      });
+      expect(payload.service_tier).toBe("priority");
+    });
+  });
+
   it("does not inject service_tier for proxied openai base URLs", () => {
     const payload = runResponsesPayloadMutationCase({
       applyProvider: "openai",
@@ -3803,6 +3885,48 @@ describe("applyExtraParamsToAgent", () => {
     ]);
   });
 
+  it("auto-injects OpenAI Responses context_management compaction for custom-openai responses providers", () => {
+    const payload = runResponsesPayloadMutationCase({
+      applyProvider: "custom-openai-responses",
+      applyModelId: "gpt-5.4",
+      model: {
+        api: "openai-responses",
+        provider: "custom-openai-responses",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+        contextWindow: 200_000,
+      } as unknown as Model<"openai-responses">,
+    });
+    expect(payload.store).toBe(true);
+    expect(payload.context_management).toEqual([
+      {
+        type: "compaction",
+        compact_threshold: 140_000,
+      },
+    ]);
+  });
+
+  it("auto-injects OpenAI Responses context_management compaction for proxied openai-codex responses providers", () => {
+    const payload = runResponsesPayloadMutationCase({
+      applyProvider: "openai-codex",
+      applyModelId: "gpt-5.4",
+      model: {
+        api: "openai-responses",
+        provider: "openai-codex",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+        contextWindow: 200_000,
+      } as unknown as Model<"openai-responses">,
+    });
+    expect(payload.store).toBe(true);
+    expect(payload.context_management).toEqual([
+      {
+        type: "compaction",
+        compact_threshold: 140_000,
+      },
+    ]);
+  });
+
   it("does not auto-inject OpenAI Responses context_management for Azure by default", () => {
     const payload = runResponsesPayloadMutationCase({
       applyProvider: "azure-openai-responses",
@@ -3989,6 +4113,46 @@ describe("applyExtraParamsToAgent", () => {
       },
     });
     expect(payload.prompt_cache_key).toBe("session-azure");
+    expect(payload.prompt_cache_retention).toBe("24h");
+  });
+
+  it("keeps prompt cache fields for custom-openai responses providers", () => {
+    const payload = runResponsesPayloadMutationCase({
+      applyProvider: "custom-openai-responses",
+      applyModelId: "gpt-5.4",
+      model: {
+        api: "openai-responses",
+        provider: "custom-openai-responses",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+      } as unknown as Model<"openai-responses">,
+      payload: {
+        store: false,
+        prompt_cache_key: "session-custom-openai",
+        prompt_cache_retention: "24h",
+      },
+    });
+    expect(payload.prompt_cache_key).toBe("session-custom-openai");
+    expect(payload.prompt_cache_retention).toBe("24h");
+  });
+
+  it("keeps prompt cache fields for proxied openai-codex responses providers", () => {
+    const payload = runResponsesPayloadMutationCase({
+      applyProvider: "openai-codex",
+      applyModelId: "gpt-5.4",
+      model: {
+        api: "openai-responses",
+        provider: "openai-codex",
+        id: "gpt-5.4",
+        baseUrl: "https://proxy.example.com/v1",
+      } as unknown as Model<"openai-responses">,
+      payload: {
+        store: false,
+        prompt_cache_key: "session-openai-codex-proxy",
+        prompt_cache_retention: "24h",
+      },
+    });
+    expect(payload.prompt_cache_key).toBe("session-openai-codex-proxy");
     expect(payload.prompt_cache_retention).toBe("24h");
   });
 

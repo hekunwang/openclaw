@@ -75,6 +75,7 @@ function shouldApplyOpenAIServiceTier(model: {
   api?: unknown;
   provider?: unknown;
   baseUrl?: unknown;
+  compat?: unknown;
 }): boolean {
   return resolveOpenAIResponsesPayloadPolicy(model, { storeMode: "disable" }).allowsServiceTier;
 }
@@ -423,7 +424,10 @@ export function createOpenAIFastModeWrapper(baseStreamFn: StreamFn | undefined):
       (model.api !== "openai-responses" &&
         model.api !== "openai-codex-responses" &&
         model.api !== "azure-openai-responses") ||
-      (model.provider !== "openai" && model.provider !== "openai-codex")
+      (model.provider !== "openai" &&
+        model.provider !== "openai-codex" &&
+        model.provider !== "custom-openai" &&
+        model.provider !== "custom-openai-responses")
     ) {
       return underlying(model, context, options);
     }
@@ -468,7 +472,11 @@ export function createOpenAITextVerbosityWrapper(
 ): StreamFn {
   const underlying = baseStreamFn ?? streamSimple;
   return (model, context, options) => {
-    if (model.api !== "openai-responses" && model.api !== "openai-codex-responses") {
+    if (
+      model.api !== "openai-responses" &&
+      model.api !== "openai-codex-responses" &&
+      model.api !== "azure-openai-responses"
+    ) {
       return underlying(model, context, options);
     }
     const resolvedVerbosity = resolveOpenAITextVerbosityForModel(model, verbosity);

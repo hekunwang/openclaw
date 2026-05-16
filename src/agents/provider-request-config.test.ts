@@ -531,6 +531,50 @@ describe("provider request config", () => {
     expect(resolved.headers?.["X-Custom"]).toBe("1");
   });
 
+  it("treats custom-openai responses routes as OpenAI-like for capability resolution", () => {
+    const resolved = resolveProviderRequestPolicyConfig({
+      provider: "custom-openai-responses",
+      api: "openai-responses",
+      baseUrl: "https://proxy.example.com/v1/",
+      compat: {
+        supportsStore: true,
+      },
+      capability: "llm",
+      transport: "stream",
+    });
+
+    expect(resolved.baseUrl).toBe("https://proxy.example.com/v1");
+    expect(resolved.policy.endpointClass).toBe("custom");
+    expect(resolved.capabilities).toMatchObject({
+      allowsOpenAIServiceTier: true,
+      supportsOpenAIReasoningCompatPayload: true,
+      allowsResponsesStore: true,
+      shouldStripResponsesPromptCache: false,
+    });
+  });
+
+  it("treats proxied openai-codex responses routes as OpenAI-like for capability resolution", () => {
+    const resolved = resolveProviderRequestPolicyConfig({
+      provider: "openai-codex",
+      api: "openai-responses",
+      baseUrl: "https://proxy.example.com/v1/",
+      compat: {
+        supportsStore: true,
+      },
+      capability: "llm",
+      transport: "stream",
+    });
+
+    expect(resolved.baseUrl).toBe("https://proxy.example.com/v1");
+    expect(resolved.policy.endpointClass).toBe("custom");
+    expect(resolved.capabilities).toMatchObject({
+      allowsOpenAIServiceTier: true,
+      supportsOpenAIReasoningCompatPayload: true,
+      allowsResponsesStore: true,
+      shouldStripResponsesPromptCache: false,
+    });
+  });
+
   it("auto-allows loopback model-provider stream requests", () => {
     const resolved = resolveProviderRequestPolicyConfig({
       provider: "local-agent-proxy",

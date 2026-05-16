@@ -22,6 +22,15 @@ export function resolveCacheRetention(
 ): CacheRetention | undefined {
   const hasExplicitCacheConfig =
     extraParams?.cacheRetention !== undefined || extraParams?.cacheControlTtl !== undefined;
+  const normalizedProvider = typeof provider === "string" ? provider.trim().toLowerCase() : "";
+  const normalizedModelApi = typeof modelApi === "string" ? modelApi.trim().toLowerCase() : "";
+  const isOpenAILike =
+    normalizedProvider === "openai" ||
+    normalizedProvider === "openai-codex" ||
+    normalizedProvider === "custom-openai" ||
+    normalizedProvider === "custom-openai-responses" ||
+    normalizedModelApi === "openai-responses" ||
+    normalizedModelApi === "openai-codex-responses";
   const family = resolveAnthropicCacheRetentionFamily({
     provider,
     modelApi,
@@ -30,7 +39,7 @@ export function resolveCacheRetention(
   });
   const googleEligible = isGooglePromptCacheEligible({ modelApi, modelId });
 
-  if (!family && !googleEligible) {
+  if (!family && !googleEligible && !isOpenAILike) {
     return undefined;
   }
 
@@ -44,6 +53,10 @@ export function resolveCacheRetention(
     return "short";
   }
   if (legacy === "1h") {
+    return "long";
+  }
+
+  if (isOpenAILike) {
     return "long";
   }
 

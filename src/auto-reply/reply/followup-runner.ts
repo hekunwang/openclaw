@@ -311,6 +311,7 @@ export function createFollowupRunner(params: {
                 model,
                 ...authProfile,
                 thinkLevel: run.thinkLevel,
+                fastMode: run.fastMode,
                 verboseLevel: run.verboseLevel,
                 reasoningLevel: run.reasoningLevel,
                 suppressToolErrorWarnings: opts?.suppressToolErrorWarnings,
