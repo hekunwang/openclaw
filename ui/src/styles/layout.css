@@ -796,13 +796,17 @@
 }
 
 .sidebar-pinned-chats {
+  width: 100%;
+  min-width: 0;
   display: grid;
   gap: 8px;
   padding-top: 4px;
   border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  overflow: hidden;
 }
 
 .sidebar-pinned-chats__header {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -811,6 +815,10 @@
 }
 
 .sidebar-pinned-chats__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -819,6 +827,7 @@
 }
 
 .sidebar-pinned-chats__header-actions {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -890,12 +899,15 @@
 }
 
 .sidebar-pinned-chats__items {
+  min-width: 0;
   display: grid;
   gap: 4px;
 }
 
 .sidebar-pinned-chats__row {
-  display: flex;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
   align-items: center;
   gap: 6px;
 }
@@ -905,8 +917,10 @@
 }
 
 .sidebar-pinned-chats__slot {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+  justify-content: flex-start;
 }
 
 .sidebar-pinned-chats__slot:active {
@@ -917,6 +931,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-pinned-chats__slot--missing {
@@ -993,8 +1008,9 @@
 }
 
 .sidebar-pinned-chats__empty {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1009,6 +1025,10 @@
 }
 
 .sidebar-pinned-chats__empty .nav-item__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 600;
 }
@@ -1034,8 +1054,9 @@
 }
 
 .sidebar-pinned-chats__rename-input {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   height: 40px;
   padding: 0 12px;
   border-radius: var(--radius-md);
